@@ -1,16 +1,19 @@
-/******************************************************************************
+/*
+ *****************************************************************************
  *  Compilation:  javac SCUtility.java
  *  Execution:    none
  *  Dependencies: SeamCarver.java
  *
  *  Some utility functions for testing SeamCarver.java.
  *
- ******************************************************************************/
+ *****************************************************************************
 
-import java.awt.Color;
+ */
 
 import edu.princeton.cs.algs4.Picture;
 import edu.princeton.cs.algs4.StdRandom;
+
+import java.awt.Color;
 
 public class SCUtility {
 
@@ -36,8 +39,8 @@ public class SCUtility {
         for (int col = 0; col < sc.width(); col++)
             for (int row = 0; row < sc.height(); row++)
                 returnDouble[col][row] = sc.energy(col, row);
-    
-        return returnDouble;        
+
+        return returnDouble;
     }
 
     // displays grayvalues as energy (converts to picture, calls show)
@@ -63,13 +66,13 @@ public class SCUtility {
 
         // maximum grayscale value (ignoring border pixels)
         double maxVal = 0;
-        for (int col = 1; col < width-1; col++) {
-            for (int row = 1; row < height-1; row++) {
+        for (int col = 1; col < width - 1; col++) {
+            for (int row = 1; row < height - 1; row++) {
                 if (grayValues[col][row] > maxVal)
                     maxVal = grayValues[col][row];
             }
         }
-            
+
         if (maxVal == 0)
             return picture; // return black picture
 
@@ -77,7 +80,8 @@ public class SCUtility {
             for (int row = 0; row < height; row++) {
                 float normalizedGrayValue = (float) grayValues[col][row] / (float) maxVal;
                 if (normalizedGrayValue >= 1.0f) normalizedGrayValue = 1.0f;
-                picture.set(col, row, new Color(normalizedGrayValue, normalizedGrayValue, normalizedGrayValue));
+                picture.set(col, row, new Color(normalizedGrayValue, normalizedGrayValue,
+                                                normalizedGrayValue));
             }
         }
 
@@ -96,7 +100,7 @@ public class SCUtility {
         for (int col = 0; col < width; col++)
             for (int row = 0; row < height; row++)
                 overlaid.set(col, row, picture.get(col, row));
-        
+
 
         // if horizontal seam, then set one pixel in every column
         if (horizontal) {
