@@ -1,7 +1,7 @@
 /* *****************************************************************************
- *  Name:
- *  Date:
- *  Description:
+ *  Name: Ahmed Sherif
+ *  Date: 30/01/2024
+ *  Description: Content Awareness Image Resizing
  **************************************************************************** */
 
 import edu.princeton.cs.algs4.Picture;
