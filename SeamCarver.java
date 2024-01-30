@@ -8,33 +8,29 @@ import edu.princeton.cs.algs4.Picture;
 
 public class SeamCarver {
     private Picture picture;
-    private double[][] Energy;
-    private double[][] distanceTo;
-    private int col;
-    private int row;
+    private double[][] energy;
+    private double[][] distance;
+
 
     public SeamCarver(Picture picture) {
         if (picture == null)
             throw new IllegalArgumentException();
         this.picture = new Picture(picture);
-        col = width();
-        row = height();
-        Energy = new double[col][row];
-        distanceTo = new double[col][row];
-        for (int i = 0; i < row; i++)
-            for (int j = 0; j < col; j++)
-                Energy[j][i] = Double.POSITIVE_INFINITY;
+        energy = new double[width()][height()];
+        distance = new double[width()][height()];
         initEnergy();
     }
 
     private void initEnergy() {
+        int col = width();
+        int row = height();
         for (int i = 0; i < col; i++) {
-            Energy[i][0] = 1000;
-            Energy[i][row - 1] = 1000;
+            energy[i][0] = 1000;
+            energy[i][row - 1] = 1000;
         }
         for (int i = 1; i < row - 1; i++) {
-            Energy[0][i] = 1000;
-            Energy[col - 1][i] = 1000;
+            energy[0][i] = 1000;
+            energy[col - 1][i] = 1000;
         }
         for (int x = 1; x < col - 1; x++)
             for (int y = 1; y < row - 1; y++)
@@ -58,16 +54,18 @@ public class SeamCarver {
 
     // energy of pixel at column x and row y
     public double energy(int x, int y) {
-        if (x >= col || y >= row)
+        int col = width();
+        int row = height();
+        if (x >= col || y >= row || x < 0 || y < 0)
             throw new IllegalArgumentException();
-        if (Energy[x][y] == Double.POSITIVE_INFINITY) {
+        if (x > 0 && y > 0 && x < width() - 1 && y < height() - 1) {
             double deltaX = getDeltaX(x, y);
             double deltaY = getDeltaY(x, y);
-            double energy = Math.sqrt(deltaX + deltaY);
-            Energy[x][y] = energy;
-            return energy;
+            energy[x][y] = Math.sqrt(deltaX + deltaY);
+            return energy[x][y];
         }
-        return Energy[x][y];
+        energy[x][y] = 1000;
+        return 1000;
     }
 
     private double getDeltaX(int x, int y) {
@@ -84,6 +82,7 @@ public class SeamCarver {
         int bX = bN - bP;
         double deltaX = Math.pow(rX, 2) + Math.pow(gX, 2) + Math.pow(bX, 2);
         return deltaX;
+
     }
 
     private double getDeltaY(int x, int y) {
@@ -110,111 +109,104 @@ public class SeamCarver {
      *           (x-1,y+1)
      * */
     public int[] findHorizontalSeam() {
-    /*    transpose();
-        picture.save("xx.png");
+        transpose();
         int[] seam = findVerticalSeam();
-        // transpose();
-        return seam;*/
-        Picture transposed = new Picture(picture.height(), picture.width());
-        for (int x = 0; x < col; x++)
-            for (int y = 0; y < row; y++)
-                transposed.set(y, x, picture.get(x, y));
-        SeamCarver flipped = new SeamCarver(transposed);
-        return flipped.findVerticalSeam();
+        transpose();
+        return seam;
     }
 
     private void transpose() {
         Picture transposed = new Picture(picture.height(), picture.width());
+        double[][] newEnergy = new double[picture.height()][picture.width()];
+        double[][] newDistance = new double[picture.height()][picture.width()];
         for (int x = 0; x < picture.width(); x++)
-            for (int y = 0; y < picture.height(); y++)
+            for (int y = 0; y < picture.height(); y++) {
                 transposed.set(y, x, picture.get(x, y));
+                newEnergy[y][x] = energy[x][y];
+                newDistance[y][x] = distance[x][y];
+            }
+        energy = newEnergy;
+        distance = newDistance;
         picture = transposed;
     }
     // Function to manually transpose the picture
 
-    private void relax(int x, int y) {
-        if (distanceTo[x][y] >= Energy[x][y] + distanceTo[x][y - 1])
-            distanceTo[x][y] = Energy[x][y] + distanceTo[x][y - 1];
-        else if (distanceTo[x][y] >= Energy[x][y] + distanceTo[x - 1][y - 1])
-            distanceTo[x][y] = Energy[x][y] + distanceTo[x - 1][y - 1];
-        else if (distanceTo[x][y] >= Energy[x][y] + distanceTo[x + 1][y - 1])
-            distanceTo[x][y] = Energy[x][y] + distanceTo[x + 1][y - 1];
-    }
 
     // sequence of indices for vertical seam
     public int[] findVerticalSeam() {
-        int i;
-        int x;
-        int y;
-        int[] seam = new int[row];
-        for (i = 0; i < col; i++)
-            for (int j = 0; j < row; j++)
-                distanceTo[i][j] = Double.POSITIVE_INFINITY;
-        for (i = 0; i < col; i++) {
-            distanceTo[i][0] = 1000;
-            distanceTo[i][row - 1] = 1000;
-        }
-        for (i = 1; i < row - 1; i++) {
-            distanceTo[0][i] = 1000;
-            distanceTo[col - 1][i] = 1000;
-        }
-        for (y = 1; y < row - 1; y++)
-            for (x = 1; x < col - 1; x++)
-                relax(x, y);
-        double min = Double.POSITIVE_INFINITY;
-        for (i = 1; i < col; i++)
-            if (distanceTo[i][1] < min) {
-                min = distanceTo[i][1];
-                seam[1] = i;
-                seam[0] = i;
+        int[] seam = new int[height()];
+        if (width() == 1 || height() == 1) {
+            for (int x = 0; x < width(); x++) {
+                for (int y = 0; y < height(); y++)
+                    seam[y] = x;
             }
-        int minimumIndexCol = seam[1]; // column
-        for (i = 2; i < row; i++) {
-            if (minimumIndexCol + 1 < col) {
-                if (minimumIndexCol - 1 >= 0) {
-                    if (distanceTo[minimumIndexCol][i] < distanceTo[minimumIndexCol - 1][i]
-                            && distanceTo[minimumIndexCol][i] < distanceTo[minimumIndexCol + 1][i])
-                        seam[i] = minimumIndexCol;
+            return seam;
+        }
+        initEnergy();
 
-                    else if (distanceTo[minimumIndexCol + 1][i] < distanceTo[minimumIndexCol][i]
-                            && distanceTo[minimumIndexCol + 1][i] < distanceTo[minimumIndexCol
-                            - 1][i])
-                        seam[i] = minimumIndexCol + 1;
-                    else if (distanceTo[minimumIndexCol - 1][i] < distanceTo[minimumIndexCol + 1][i]
-                            && distanceTo[minimumIndexCol - 1][i] < distanceTo[minimumIndexCol][i])
-                        seam[i] = minimumIndexCol - 1;
-                }
+        int height = picture.height() - 1;
+        for (int i = 0; i < picture.width(); i++)
+            distance[i][height] = energy[i][height];
+        for (int y = height() - 2; y >= 0; y--) {
+            for (int x = 0; x < width(); x++) {
+                if (x == 0)
+                    distance[x][y] = energy[x][y] + (Math.min(distance[x][y + 1],
+                                                              distance[x + 1][y + 1]));
+                else if (x == width() - 1)
+                    distance[x][y] = energy[x][y] + Math.min(distance[x][y + 1],
+                                                             distance[x - 1][y + 1]);
                 else {
-                    if (distanceTo[minimumIndexCol][i] < distanceTo[minimumIndexCol + 1][i])
-                        seam[i] = minimumIndexCol;
-
-                    else if (distanceTo[minimumIndexCol + 1][i] < distanceTo[minimumIndexCol][i])
-                        seam[i] = minimumIndexCol + 1;
+                    distance[x][y] = energy[x][y] + Math.min(
+                            Math.min(distance[x][y + 1], distance[x - 1][y + 1]),
+                            distance[x + 1][y + 1]);
                 }
             }
-            else {
-                if (distanceTo[minimumIndexCol][i] < distanceTo[minimumIndexCol - 1][i])
-                    seam[i] = minimumIndexCol;
-                else if (distanceTo[minimumIndexCol - 1][i] < distanceTo[minimumIndexCol][i])
-                    seam[i] = minimumIndexCol - 1;
+        }
+        int x;
+        int minIndex = -1;
+        double min = Double.POSITIVE_INFINITY;
+        for (x = 0; x < width(); x++) {
+            if (distance[x][0] < min) {
+                min = distance[x][0];
+                minIndex = x;
             }
-            minimumIndexCol = seam[i];
+        }
+        seam[0] = minIndex;
+        for (int y = 0; y < height() - 2; y++) {
+            if (minIndex == width() - 1)
+                seam[y + 1] = distance[minIndex - 1][y + 1] >= distance[minIndex][y + 1] ?
+                              minIndex : minIndex - 1;
+            else if (minIndex == 0)
+                seam[y + 1] = distance[minIndex + 1][y + 1] >= distance[minIndex][y + 1] ?
+                              minIndex : minIndex + 1;
+            else {
+                min = Math.min(distance[minIndex][y + 1], Math.min(distance[minIndex - 1][y + 1],
+                                                                   distance[minIndex + 1][y + 1]));
+                if (min == distance[minIndex][y + 1])
+                    seam[y + 1] = minIndex;
+                else if (min == distance[minIndex + 1][y + 1])
+                    seam[y + 1] = minIndex + 1;
+                else
+                    seam[y + 1] = minIndex - 1;
+            }
+            minIndex = seam[y + 1];
         }
 
-
-     /*   for (i = 0; i < row; i++)
-            System.out.println(seam[i] + "  ");*/
+        seam[height() - 1] = seam[height() - 2];
         return seam;
     }
 
+
     // remove horizontal seam from current picture
     public void removeHorizontalSeam(int[] seam) {
-        if (seam == null || seam.length != width() || height() <= 1)
-            throw new IllegalArgumentException("Invalid seam");
-
+        if (seam == null)
+            throw new IllegalArgumentException();
+        checkValidity(seam);
         Picture newPicture = new Picture(width(), height() - 1);
         for (int x = 0; x < width(); x++) {
             for (int y = 0; y < height() - 1; y++) {
+                if (seam[x] < 0)
+                    throw new IllegalArgumentException();
                 if (y < seam[x]) {
                     newPicture.setRGB(x, y, picture.getRGB(x, y));
                 }
@@ -224,18 +216,19 @@ public class SeamCarver {
             }
         }
         picture = newPicture;
-        // Recalculate energy for affected pixels
-        updateEnergyAfterRemoval(seam);
+        initEnergy();
     }
 
     // remove vertical seam from current picture
     public void removeVerticalSeam(int[] seam) {
-        if (seam == null || seam.length != height() || width() <= 1)
-            throw new IllegalArgumentException("Invalid seam");
-
+        if (seam == null)
+            throw new IllegalArgumentException();
+        checkValidity(seam);
         Picture newPicture = new Picture(width() - 1, height());
         for (int y = 0; y < height(); y++) {
             for (int x = 0; x < width() - 1; x++) {
+                if (seam[y] < 0)
+                    throw new IllegalArgumentException();
                 if (x < seam[y]) {
                     newPicture.setRGB(x, y, picture.getRGB(x, y));
                 }
@@ -245,51 +238,48 @@ public class SeamCarver {
             }
         }
         picture = newPicture;
-        // Recalculate energy for affected pixels
-        updateEnergyAfterRemoval(seam);
+        initEnergy();
     }
 
-    // Recalculate energy values for pixels affected by seam removal
-    private void updateEnergyAfterRemoval(int[] seam) {
-        double[][] newEnergy = new double[width()][height()];
-
-        for (int y = 0; y < height(); y++) {
-            int k = 0;
-            for (int x = 0; x < width(); x++) {
-                if (x != seam[y]) {
-                    Energy[x][y] = energy(x, y);
-                    newEnergy[k][y] = Energy[x][y];
-                    k++;
-                }
-            }
+    private void checkValidity(int[] seam) {
+        if (width() < 1 || height() < 1) {
+            throw new IllegalArgumentException(
+                    "The width and height of the picture must be greatern than 1");
+        }
+        if (seam.length < 1) {
+            throw new IllegalArgumentException("The seam size must be greater than 1.");
         }
 
-        Energy = newEnergy;
-        col = width();
-        row = height();
+        for (int i = 0; i < seam.length - 1; i++) {
+            if (Math.abs(seam[i] - seam[i + 1]) > 1) {
+                throw new IllegalArgumentException();
+            }
+        }
     }
-
+    /*
     private void printEnergy() {
+        int row = height();
+        int col = width();
         for (int r = 0; r < row; r++) {
             for (int c = 0; c < col; c++)
-                System.out.print(Energy[c][r] + " ");
+                System.out.print(energy[c][r] + " ");
             System.out.print("\n");
         }
     }
 
     private void printDistanceTo() {
+        int row = height();
+        int col = width();
         for (int r = 0; r < row; r++) {
             for (int c = 0; c < col; c++)
-                System.out.print(distanceTo[c][r] + " ");
+                System.out.print(distance[c][r] + " ");
             System.out.print("\n");
         }
     }
+    */
 
-    public static void main(String[] args) {
-        SeamCarver obj = new SeamCarver(new Picture("HJocean.png"));
-        obj.findHorizontalSeam();
-        obj.printDistanceTo();
-
-
-    }
+/*    public static void main(String[] args) {
+        SeamCarver obj = new SeamCarver(new Picture("logo.png"));
+        obj.printEnergy();
+    }*/
 }
